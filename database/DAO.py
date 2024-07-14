@@ -1,54 +1,88 @@
 from database.DB_connect import DBConnect
-from model.Avvistamento import Avvistamento
-from model.Stato import Stato
-
-
+from model.State import State
+from model.Sighting import Sighting
 class DAO():
     def __init__(self):
         pass
-
     @staticmethod
-    def getAllState():
-        risultato = []
+    def getAllStates():
         conn = DBConnect.get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('SELECT * FROM state')
-        for row in cursor:
-            risultato.append(Stato(row["id"], row["Name"], row["Capital"], row["Lat"],
-                                   row["Lng"], row["Area"], row["Population"], row["Neighbors"]))
-        cursor.close()
-        conn.close()
-        return risultato
 
-    @staticmethod
-    def getAllAvvistamento():
-        risultato = []
-        conn = DBConnect.get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute('SELECT * FROM sighting S ORDER BY S.datetime')
-        for row in cursor:
-            risultato.append(Avvistamento(row["id"], row["datetime"], row["city"], row["state"],
-                                          row["country"], row["shape"], row["duration"], row["duration_hm"],
-                                          row["comments"], row["date_posted"], row["latitude"], row["longitude"]))
-        cursor.close()
-        conn.close()
-        return risultato
-    @staticmethod
-    def cercaArchi(shape, year):
         result = []
-        conn = DBConnect.get_connection()
+
         cursor = conn.cursor(dictionary=True)
-        query = """
-        SELECT N.state1 as n1, N.state2 as n2, COUNT(*) as N
-        FROM neighbor N, sighting S 
-        WHERE (N.state1 = S.state OR N.state2 = S.state)
-        AND S.shape = %s 
-        AND YEAR(S.datetime) = %s
-        GROUP BY N.state1, N.state2
-        """
-        cursor.execute(query, (shape, year))
+        query = """select * from state s  """
+
+        cursor.execute(query)
+
         for row in cursor:
-            result.append((row["n1"], row["n2"], row["N"]))
+            result.append(State(row["id"], row["Name"], row["Capital"], row["Lat"], row["Lng"], row["Area"], row["Population"], row["Neighbors"]))
+
+        cursor.close()
+        conn.close()
+        return result
+
+    @staticmethod
+    def getAllSighting():
+        conn = DBConnect.get_connection()
+
+        result = []
+
+        cursor = conn.cursor(dictionary=True)
+        query = """select * from sighting s order by `datetime` asc """
+
+        cursor.execute(query)
+
+        for row in cursor:
+            result.append(Sighting(**row))
+
+        cursor.close()
+        conn.close()
+        return result
+
+    @staticmethod
+    def cercaArchi():
+        conn = DBConnect.get_connection()
+
+        result = []
+
+        cursor = conn.cursor(dictionary=True)
+
+        # ARCO TRA 2 STATI CONFINANTI,
+        # PESO = NUMERO DI AVVISTAMENTI CON FORMA S E ANNO Y NEI 2 STATI
+
+        query = """select * from neighbor n"""
+
+        cursor.execute(query)
+
+        for row in cursor:
+            result.append((row["state1"], row["state2"]))
+
+        cursor.close()
+        conn.close()
+        return result
+
+    @staticmethod
+    def getStatesByYandS(y,c):
+        conn = DBConnect.get_connection()
+
+        result = []
+
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+        select s.* 
+        from state s, sighting st
+        where year(st.datetime) = %s
+        and s.id = st.state
+        and st.shape = %s
+        """
+
+        cursor.execute(query, (y, c))
+
+        for row in cursor:
+            result.append(State(row["id"], row["Name"], row["Capital"], row["Lat"], row["Lng"], row["Area"], row["Population"], row["Neighbors"]))
+
         cursor.close()
         conn.close()
         return result

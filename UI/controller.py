@@ -1,3 +1,4 @@
+
 import flet as ft
 
 
@@ -10,57 +11,71 @@ class Controller:
         self._listYear = []
         self._listShape = []
 
-    # Popolare il menù a tendina Forma con tutte le possibili forme, prese dalla colonna “shape” del db, relative
+    # a. Permettere all’utente di scegliere da un menù a tendina un anno tra tutti i possibili anni in cui ci sono stati
+    # avvistamenti (per verifica: il menù dovrà contenere tutti i valori tra il 1910 ed il 2014, estremi inclusi).
+    # b. Popolare il menù a tendina Forma con tutte le possibili forme, prese dalla colonna “shape” del db, relative
     # agli avvistamenti nell’anno considerato.
 
     def fillDD(self):
 
-        listaAvvistamenti = self._model.getAvvistamenti()
+        self._listYear = self._model.getYears()
 
-        for avvistamento in listaAvvistamenti:
-            if avvistamento.datetime.year not in self._listYear:
-                self._listYear.append(avvistamento.datetime.year)
-            if avvistamento.shape not in self._listShape:
-                self._listShape.append(avvistamento.shape)
+        for year in self._listYear:
+            self._view.ddyear.options.append(ft.dropdown.Option(year))
 
-        for y in self._listYear:
-            if int(y) > 2014 or int(y) < 1910:
-                self._view.createAlert("Errore nell'estrazione degli anni.")
-
-        for y in self._listYear:
-            self._view.ddyear.options.append(ft.dropdown.Option(y))
-
-        for s in self._listShape:
-            self._view.ddshape.options.append(ft.dropdown.Option(s))
+        self._view.ddyear.on_change = self.on_year_change
 
         self._view.update_page()
 
+    def on_year_change(self, e):
 
-    # c. Facendo click sul bottone CREA GRAFO, creare un grafo semplice, pesato e non orientato, i cui vertici siano
-    # tutti gli stati presenti nella tabella “state”. Un arco collega due stati solo se sono confinanti, come indicato
-    # nella tabella “neighbor”.
-    # d. Il peso dell’arco viene calcolato come il numero di avvistamenti che hanno la stessa forma (colonna “shape”)
-    # selezionata dal menù a tendina Forma, e che si sono verificati nello stesso anno selezionato (da estrarre dalla
-    # colonna “datetime”), nei due stati considerati.
-    # e. Stampare per ogni stato la somma dei pesi degli archi adiacenti.
+        year = int(self._view.ddyear.value)
+
+        self._listShape = self._model.getShape(year)
+
+        for shape in self._listShape:
+            self._view.ddshape.options.append(ft.dropdown.Option(shape))
+
+        self._view.update_page()
+
 
     def handle_graph(self, e):
 
+        self._view.txt_result.controls.clear()
+
+        y = int(self._view.ddyear.value)
+
         s = self._view.ddshape.value
-        y = self._view.ddyear.value
 
-        self._model.buildGraph(s,y)
+        self._model.loadStatesByYandS(y, s)
+
+        self._model.buildgraph(y, s)
+
         self._view.txt_result.controls.append(ft.Text(
-            f"Numero di vertici: {self._model.get_num_of_nodes()} Numero di archi: {self._model.get_num_of_edges()}"))
+            f"Numero di nodi: {self._model.get_num_of_nodes()}\n"
+            f"Numero di archi: {self._model.get_num_of_edges()}"))
 
-        listaPesiAdiacentiPerStato = self._model.getListaPesiAdiacentiPerStato()
-        for stato in listaPesiAdiacentiPerStato:
+        for state in self._model.get_nodes():
             self._view.txt_result.controls.append(ft.Text(
-                f"Nodo: {stato[0].id}, somma pesi su archi = {stato[1]}"))
+                f"Nodo {state._id}, somma pesi su archi adiacenti: {self._model.sommaPesiArchiAdiacenti(state)}"))
 
         self._view.update_page()
 
-        pass
-
+    # CAMMINO SEMPLICE CON PESO CRESCENTE CHE MASSIMIZZA DISTANZA TRA STATI
     def handle_path(self, e):
-        pass
+
+        self._view.txtOut2.controls.clear()
+
+        self._model.calcolaPercorso()
+
+        percorso = self._model.solBest
+
+        self._view.txtOut2.controls.append(ft.Text(
+        f"Peso cammino massimo: {int(self._model.pesoTotPercorso)};"
+        f"Distanza cammino massimo: {float(self._model.distanzaBest)}"))
+        for edge in percorso:
+            self._view.txtOut2.controls.append(ft.Text(
+                f"{edge[0]._id} --> {edge[1]._id}; weight: {int(self._model.graph[edge[0]][edge[1]]['weight'])};"
+                f" distanza: {float(self._model.calcolaDistanzaTraNodi(edge[0], edge[1]))}"))
+
+        self._view.update_page()

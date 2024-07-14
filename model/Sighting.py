@@ -1,14 +1,15 @@
+
 from dataclasses import dataclass
 from datetime import datetime
 
 
 @dataclass
-class Avvistamento:
-    id: int
+class Sighting:
+    id: str
     datetime: datetime
     city: str
     state: str
-    country: str
+    country:str
     shape: str
     duration: int
     duration_hm: str
@@ -16,6 +17,10 @@ class Avvistamento:
     date_posted: datetime
     latitude: float
     longitude: float
+
+
+    def __str__(self):
+        return self.country
 
     def __hash__(self):
         return hash(self.id)
