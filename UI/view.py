@@ -30,24 +30,24 @@ class View(ft.UserControl):
         self._page.controls.append(self._title)
 
         #ROW with some controls
-        self.ddyear = ft.Dropdown(label="Anno")
+        self.ddyear = ft.Dropdown(label="Da", on_change = self._controller.fillDDShape) ### cambio
+
         self.ddshape = ft.Dropdown(label="Shape")
 
-
         # button for the "creat graph" reply
-        self.btn_graph = ft.ElevatedButton(text="Crea Grafo", on_click=self._controller.handle_graph)
+        self.btn_graph = ft.ElevatedButton(text="Crea Grafo", on_click=self._controller.handle_graph5) ### cambio
         row1 = ft.Row([self.ddyear,self.ddshape, self.btn_graph],
                       alignment=ft.MainAxisAlignment.CENTER)
         self._page.controls.append(row1)
 
-        self._controller.fillDD()
+        self._controller.fillDDYear()
 
         # List View where the reply is printed
         self.txt_result = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
         self._page.controls.append(self.txt_result)
         self._page.update()
 
-        self.btn_path = ft.ElevatedButton(text="Calcola percorso", on_click=self._controller.handle_path)
+        self.btn_path = ft.ElevatedButton(text="Calcola percorso", on_click=self._controller.handle_set)
 
         row2 = ft.Row([self.btn_path],
                       alignment=ft.MainAxisAlignment.CENTER)
@@ -56,6 +56,7 @@ class View(ft.UserControl):
         self.txtOut2 = ft.ListView(expand=1, spacing=10, padding=20, auto_scroll=True)
         self._page.controls.append(self.txtOut2)
         self._page.update()
+
     @property
     def controller(self):
         return self._controller
